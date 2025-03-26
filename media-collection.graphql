@@ -1,17 +1,8 @@
-query MediaListCollection($userId: Int) {
-  MediaListCollection(userId: $userId) {
-    user {
-      id
-      avatar {
-        large
-        medium
-      }
-      name
-      bannerImage
-    }
-    hasNextChunk
+query MediaListCollection($type: MediaType, $userId: Int) {
+  MediaListCollection(type: $type, userId: $userId) {
     lists {
       entries {
+        score
         media {
           coverImage {
             extraLarge
@@ -20,9 +11,7 @@ query MediaListCollection($userId: Int) {
             color
           }
           isAdult
-          popularity
           status
-          meanScore
           type
           averageScore
           bannerImage

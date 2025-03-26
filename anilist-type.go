@@ -10,8 +10,11 @@ import (
 	"path/filepath"
 )
 
+// Image is a url to image
 type Image string
 
+// Download downloads the image and saves it to the disk.
+// Returns the path in which the image is downloaded.
 func (i Image) Download() (string, error) {
 	cacheDir, err := os.UserCacheDir()
 	if err != nil {
@@ -56,46 +59,139 @@ func (i Image) Download() (string, error) {
 	return filePath, nil
 }
 
+// User represents the root structure of a user profile.
 type User struct {
-	Data `json:"data"`
+	UserData `json:"data"`
 }
 
-type Data struct {
+// UserData encapsulates the main data for a user.
+type UserData struct {
 	Viewer `json:"Viewer"`
 }
 
+// Viewer contains detailed information about a user, including avatar, banner, favorites, and identity.
 type Viewer struct {
-	Avatar     Avatar     `json:"avatar"`
-	Banner     Image      `json:"bannerImage"`
-	Favourites Favourites `json:"favourites"`
-	ID         int64      `json:"id"`
-	Name       string     `json:"name"`
+	Avatar     Avatar     `json:"avatar"`      // Avatar images in different sizes.
+	Banner     Image      `json:"bannerImage"` // Banner image associated with the user profile.
+	Favourites Favourites `json:"favourites"`  // Favorite anime, manga, and characters.
+	ID         int64      `json:"id"`          // Unique identifier of the user.
+	Name       string     `json:"name"`        // Display name of the user.
 }
 
+// Avatar holds different sizes of an avatar image.
 type Avatar struct {
-	Large  Image `json:"large"`
-	Medium Image `json:"medium"`
+	Large  Image `json:"large"`  // Large-sized avatar image.
+	Medium Image `json:"medium"` // Medium-sized avatar image.
 }
 
+// Favourites stores the user's favorite anime, manga, and characters.
 type Favourites struct {
-	Anime      Anime      `json:"anime"`
-	Characters Characters `json:"characters"`
-	Manga      Anime      `json:"manga"`
+	Anime      FavouriteNode `json:"anime"`      // Favorite anime list.
+	Manga      FavouriteNode `json:"manga"`      // Favorite manga list.
+	Characters Characters    `json:"characters"` // Favorite characters.
 }
 
-type Anime struct {
-	Nodes []AnimeNode `json:"nodes"`
+// FavouriteNode represents a list of favorite anime or manga.
+type FavouriteNode struct {
+	Nodes `json:"nodes"` // Collection of favorite media entries.
 }
 
-type AnimeNode struct {
-	ID int64 `json:"id"`
+// Nodes is a slice of Node, representing a collection of media entries.
+type Nodes []Node
+
+// Node represents a single media entry.
+type Node struct {
+	ID int64 `json:"id"` // Unique identifier of the media entry.
 }
 
+// Characters represents a collection of favorite character nodes.
 type Characters struct {
-	Nodes []CharactersNode `json:"nodes"`
+	Nodes []CharactersNode `json:"nodes"` // List of favorite character entries.
 }
 
+// CharactersNode represents a single favorite character entry.
 type CharactersNode struct {
-	ID    int64  `json:"id"`
-	Image Avatar `json:"image"`
+	ID    int64  `json:"id"`    // Unique identifier of the character.
+	Image Avatar `json:"image"` // Character's avatar image.
+}
+
+// ListStatus represents different statuses for a media list entry.
+type ListStatus string
+
+const (
+	Current   ListStatus = "CURRENT"   // Currently watching/reading.
+	Completed            = "COMPLETED" // Fully watched/read.
+	Dropped              = "DROPPED"   // Dropped midway.
+	Paused               = "PAUSED"    // Temporarily on hold.
+	Planning             = "PLANNING"  // Planned for future.
+)
+
+// Status represents the release status of a media.
+type Status string
+
+const (
+	Finished    Status = "FINISHED"         // Media is fully released.
+	NotReleased        = "NOT_YET_RELEASED" // Media has not been released yet.
+	Releasing          = "RELEASING"        // Media is currently ongoing.
+)
+
+// Type defines whether the media is anime or manga.
+type Type string
+
+const (
+	Anime Type = "ANIME" // Anime type media.
+	Manga      = "MANGA" // Manga type media.
+)
+
+// ListData represents the root structure for media lists.
+type ListData struct {
+	MediaListCollection `json:"MediaListCollection"`
+}
+
+// MediaListCollection contains a list of categorized media lists.
+type MediaListCollection struct {
+	Lists []List `json:"lists"` // Collection of media lists.
+}
+
+// List represents a categorized list of media entries.
+type List struct {
+	Entries []Entry    `json:"entries"` // Entries in the list.
+	Name    string     `json:"name"`    // Name of the list.
+	Status  ListStatus `json:"status"`  // Status of the list.
+}
+
+// Entry represents a single media entry with a score.
+type Entry struct {
+	Media `json:"media"` // Media details.
+	Score float64        `json:"score"` // User-assigned score.
+}
+
+// Media represents detailed information about a media entry.
+type Media struct {
+	AverageScore *int64     `json:"averageScore"` // Community average score.
+	Banner       *Image     `json:"bannerImage"`  // Banner image of the media.
+	Cover        CoverImage `json:"coverImage"`   // Cover image in different sizes.
+	IsAdult      bool       `json:"isAdult"`      // Indicates if the media is for adults.
+	MeanScore    *int64     `json:"meanScore"`    // Mean score of the media.
+	Popularity   int64      `json:"popularity"`   // Popularity ranking.
+	Status       Status     `json:"status"`       // Release status.
+	Type         Type       `json:"type"`         // Media type (anime/manga).
+}
+
+// CoverImage contains multiple sizes of the cover image.
+type CoverImage struct {
+	Color      *string `json:"color"`      // Dominant color of the cover image.
+	ExtraLarge Image   `json:"extraLarge"` // Extra-large-sized cover image.
+	Large      Image   `json:"large"`      // Large-sized cover image.
+	Medium     Image   `json:"medium"`     // Medium-sized cover image.
+}
+
+// AnimeList is a wrapper for anime-related media lists.
+type AnimeList struct {
+	ListData `json:"data"`
+}
+
+// MangaList is a wrapper for manga-related media lists.
+type MangaList struct {
+	ListData `json:"data"`
 }

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -276,4 +277,60 @@ func (a *Anilist) GetCurrentUser() (User, error) {
 	}
 
 	return user, nil
+}
+
+func (a *Anilist) GetList(id int64) (AnimeList, MangaList, error) {
+	var anime AnimeList
+	var manga MangaList
+
+	animeQuery := GraphQL{Query: MediaCollectionQuery, Variables: map[string]any{"userId": id, "type": "ANIME"}}
+	animeJsonBytes := animeQuery.Json()
+
+	animeReq, err := http.NewRequestWithContext(a.ctx, http.MethodPost, Endpoint, bytes.NewBuffer(animeJsonBytes))
+	if err != nil {
+		return anime, manga, err
+	}
+	animeReq.Header.Set("Content-Type", "application/json")
+	animeReq.Header.Set("Accept", "application/json")
+
+	animeResp, err := a.http.Do(animeReq)
+	if err != nil {
+		return anime, manga, err
+	}
+	defer animeResp.Body.Close()
+
+	if animeResp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(animeResp.Body)
+		return anime, manga, fmt.Errorf("unexpected status code: %d, \b body: %s", animeResp.StatusCode, string(b))
+	}
+
+	if err := json.NewDecoder(animeResp.Body).Decode(&anime); err != nil {
+		return anime, manga, err
+	}
+
+	mangaQuery := GraphQL{Query: MediaCollectionQuery, Variables: map[string]any{"userId": id, "type": "MANGA"}}
+	mangaJsonBytes := mangaQuery.Json()
+
+	mangaReq, err := http.NewRequestWithContext(a.ctx, http.MethodPost, Endpoint, bytes.NewBuffer(mangaJsonBytes))
+	if err != nil {
+		return anime, manga, err
+	}
+	mangaReq.Header.Set("Content-Type", "application/json")
+	mangaReq.Header.Set("Accept", "application/json")
+
+	mangaResp, err := a.http.Do(mangaReq)
+	if err != nil {
+		return anime, manga, err
+	}
+	defer mangaResp.Body.Close()
+
+	if mangaResp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(mangaResp.Body)
+		return anime, manga, fmt.Errorf("unexpected status code: %d, \b body: %s", mangaResp.StatusCode, string(b))
+	}
+
+	if err := json.NewDecoder(mangaResp.Body).Decode(&manga); err != nil {
+		return anime, manga, err
+	}
+	return anime, manga, nil
 }
