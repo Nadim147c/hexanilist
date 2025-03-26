@@ -1,26 +1,22 @@
 package main
 
-import "github.com/fogleman/gg"
+import (
+	"context"
+	"fmt"
+)
 
 func main() {
-	const W = 2000
-	const H = 2000
-	ctx := gg.NewContext(W, H)
+	anilist := NewAnilist(context.Background())
+	defer anilist.SaveToken()
 
-	ctx.SetRGB(1, 1, 1) // White color
-	ctx.Clear()
-
-	ctx.SetRGB(0, 0, 0) // Black color
-
-	hexs := GenerateHexagonRing(20, 1000, 1000, 100)
-	for _, hex := range hexs {
-		hex.Draw(ctx)
-		ctx.SetLineWidth(10)
-		ctx.Stroke()
+	if err := anilist.Login(); err != nil {
+		panic(err)
 	}
 
-	err := ctx.SavePNG("hexagon.png")
+	user, err := anilist.GetCurrentUser()
 	if err != nil {
 		panic(err)
 	}
+
+	fmt.Printf("%+v\n", user)
 }

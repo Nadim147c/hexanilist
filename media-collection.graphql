@@ -1,0 +1,35 @@
+query MediaListCollection($userId: Int) {
+  MediaListCollection(userId: $userId) {
+    user {
+      id
+      avatar {
+        large
+        medium
+      }
+      name
+      bannerImage
+    }
+    hasNextChunk
+    lists {
+      entries {
+        media {
+          coverImage {
+            extraLarge
+            large
+            medium
+            color
+          }
+          isAdult
+          popularity
+          status
+          meanScore
+          type
+          averageScore
+          bannerImage
+        }
+      }
+      name
+      status
+    }
+  }
+}

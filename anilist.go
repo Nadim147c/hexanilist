@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,20 +12,44 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"golang.org/x/oauth2"
 )
 
 const (
-	Port         = ":90123"
-	CallbackPath = "/callback"
+	AnilistRedirectURL = "https://anilist.co/api/v2/oauth/pin"
+	AnilistAuthURL     = "https://anilist.co/api/v2/oauth/authorize"
+	AnilistTokenURL    = "https://anilist.co/api/v2/oauth/token"
 
-	AnilistRedirectURI = "http://localhost" + Port + CallbackPath
-
-	AnilistAuthURL  = "https://anilist.co/api/v2/oauth/authorize"
-	AnilistTokenURL = "https://anilist.co/api/v2/oauth/token"
+	Endpoint = "https://graphql.anilist.co"
 )
+
+const (
+	AnsiGreen = "\033[32m" // ANSI escape code for AnsiBlue
+	AnsiBlue  = "\033[34m" // ANSI escape code for blue
+	AnsiReset = "\033[0m"  // Reset color
+
+)
+
+//go:embed media-collection.graphql
+var MediaCollectionQuery string
+
+//go:embed user.graphql
+var UserQuery string
+
+type GraphQL struct {
+	Query     string         `json:"query"`
+	Variables map[string]any `json:"variables"`
+}
+
+func (q GraphQL) Json() []byte {
+	b, err := json.Marshal(q)
+	if err != nil {
+		slog.Error("Query.String: Failed to Marshal query")
+		return []byte{}
+	}
+	return b
+}
 
 // Anilist holds the OAuth2 configuration and client
 type Anilist struct {
@@ -34,11 +60,11 @@ type Anilist struct {
 }
 
 type Credentials struct {
-	ClientID     string `json:"client_id"`
-	ClientSecret string `json:"client_secret"`
+	ID     string `json:"client_id"`
+	Secret string `json:"client_secret"`
 }
 
-func saveCredentials(clientID, clientSecret string) error {
+func saveCredentials(credentials Credentials) error {
 	config, err := os.UserConfigDir()
 	if err != nil {
 		return err
@@ -51,7 +77,6 @@ func saveCredentials(clientID, clientSecret string) error {
 		return err
 	}
 
-	credentials := Credentials{ClientID: clientID, ClientSecret: clientSecret}
 	file, err := os.Create(clientPath)
 	if err != nil {
 		return err
@@ -61,49 +86,63 @@ func saveCredentials(clientID, clientSecret string) error {
 	return json.NewEncoder(file).Encode(credentials)
 }
 
-func loadCredentials() (string, string, error) {
+func loadCredentials() (Credentials, error) {
+	var credentials Credentials
 	config, err := os.UserConfigDir()
 	if err != nil {
-		return "", "", err
+		return credentials, err
 	}
 
 	clientPath := filepath.Join(config, "anilist-gird", "client.json")
 
 	file, err := os.Open(clientPath)
 	if err != nil {
-		return "", "", err
+		return credentials, err
 	}
 	defer file.Close()
 
-	var credentials Credentials
 	if err := json.NewDecoder(file).Decode(&credentials); err != nil {
-		return "", "", err
+		return credentials, err
 	}
 
-	return credentials.ClientID, credentials.ClientSecret, nil
+	return credentials, nil
 }
 
 func NewAnilist(ctx context.Context) *Anilist {
-	clientID, clientSecret, err := loadCredentials()
-	if err != nil || clientID == "" || clientSecret == "" {
+	cred, err := loadCredentials()
+	if err != nil || cred.ID == "" || cred.Secret == "" {
+		var id string
+		var secret string
+
+		fmt.Printf("%sYou need create an Anilist app!%s\n", AnsiGreen, AnsiReset)
+		fmt.Printf(" - Goto %s%s%s\n", AnsiBlue, "https://anilist.co/settings/developer", AnsiReset)
+		fmt.Println(" - Create New Client")
+		fmt.Printf(" - Give it name and set Redirect URL to %s%s%s\n\n", AnsiBlue, AnilistRedirectURL, AnsiReset)
+
 		fmt.Print("Enter Client ID: ")
-		fmt.Scanln(&clientID)
+		fmt.Scanln(&id)
 		fmt.Print("Enter Client Secret: ")
-		fmt.Scanln(&clientSecret)
+		fmt.Scanln(&secret)
 
-		clientID = strings.TrimSpace(clientID)
-		clientSecret = strings.TrimSpace(clientSecret)
+		cred = Credentials{
+			ID:     strings.TrimSpace(id),
+			Secret: strings.TrimSpace(secret),
+		}
 
-		if err := saveCredentials(clientID, clientSecret); err != nil {
+		if cred.ID == "" || cred.Secret == "" {
+			panic("Invalid ID and Secret")
+		}
+
+		if err := saveCredentials(cred); err != nil {
 			slog.Error("Failed to save credentials: %v", "error", err)
 		}
 	}
 
 	oauth2 := &oauth2.Config{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
+		ClientID:     cred.ID,
+		ClientSecret: cred.Secret,
 		Endpoint:     oauth2.Endpoint{AuthURL: AnilistAuthURL, TokenURL: AnilistTokenURL},
-		RedirectURL:  AnilistRedirectURI,
+		RedirectURL:  AnilistRedirectURL,
 		Scopes:       []string{},
 	}
 
@@ -190,32 +229,16 @@ func (a *Anilist) Login() error {
 		slog.Warn("Anilist.Login: Failed to load access-token from disk", "reason", err)
 	}
 
-	codeChan := make(chan string)
-	var wg sync.WaitGroup
+	fmt.Printf("%sOpen the following URL in your browser and authorize the application:%s\n", AnsiGreen, AnsiReset)
+	fmt.Printf(" - %s%s%s\n\n", AnsiBlue, a.LoginURL(), AnsiReset)
 
-	wg.Add(1)
-	http.HandleFunc(CallbackPath, func(w http.ResponseWriter, r *http.Request) {
-		code := r.URL.Query().Get("code")
-		if code == "" {
-			http.Error(w, "Code not found", http.StatusBadRequest)
-			return
-		}
-		fmt.Fprintln(w, "Authorization successful, you can close this tab.")
-		codeChan <- code
-	})
+	var code string
+	fmt.Print("Paste the code: ")
+	fmt.Scanln(&code)
 
-	server := &http.Server{Addr: Port}
-	go func() {
-		server.ListenAndServe()
-	}()
-
-	fmt.Println("Open the following URL in your browser and authorize the application:")
-	fmt.Println(a.LoginURL())
-
-	code := <-codeChan
-	srvErr := server.Shutdown(context.Background())
-	if srvErr != nil {
-		slog.Error("Anilist.Login: Error shutting down server", "error", srvErr)
+	code = strings.TrimSpace(code)
+	if code == "" {
+		panic("")
 	}
 
 	if err := a.Exchange(code); err != nil {
@@ -223,4 +246,34 @@ func (a *Anilist) Login() error {
 	}
 
 	return nil
+}
+
+func (a *Anilist) GetCurrentUser() (User, error) {
+	var user User
+
+	query := GraphQL{Query: UserQuery, Variables: make(map[string]any)}
+	jsonBytes := query.Json()
+
+	req, err := http.NewRequestWithContext(a.ctx, http.MethodPost, Endpoint, bytes.NewBuffer(jsonBytes))
+	if err != nil {
+		return user, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := a.http.Do(req)
+	if err != nil {
+		return user, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return user, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return user, err
+	}
+
+	return user, nil
 }
