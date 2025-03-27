@@ -96,6 +96,15 @@ type FavouriteNode struct {
 	Nodes `json:"nodes"` // Collection of favorite media entries.
 }
 
+func (fn FavouriteNode) Has(id int64) bool {
+	for _, n := range fn.Nodes {
+		if n.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
 // Nodes is a slice of Node, representing a collection of media entries.
 type Nodes []Node
 
@@ -115,24 +124,15 @@ type CharactersNode struct {
 	Image Avatar `json:"image"` // Character's avatar image.
 }
 
-// ListStatus represents different statuses for a media list entry.
-type ListStatus string
-
-const (
-	Current   ListStatus = "CURRENT"   // Currently watching/reading.
-	Completed            = "COMPLETED" // Fully watched/read.
-	Dropped              = "DROPPED"   // Dropped midway.
-	Paused               = "PAUSED"    // Temporarily on hold.
-	Planning             = "PLANNING"  // Planned for future.
-)
-
-// Status represents the release status of a media.
+// Status represents different statuses for a media list entry.
 type Status string
 
 const (
-	Finished    Status = "FINISHED"         // Media is fully released.
-	NotReleased        = "NOT_YET_RELEASED" // Media has not been released yet.
-	Releasing          = "RELEASING"        // Media is currently ongoing.
+	Current   Status = "CURRENT"   // Currently watching/reading.
+	Completed        = "COMPLETED" // Fully watched/read.
+	Dropped          = "DROPPED"   // Dropped midway.
+	Paused           = "PAUSED"    // Temporarily on hold.
+	Planning         = "PLANNING"  // Planned for future.
 )
 
 // Type defines whether the media is anime or manga.
@@ -155,26 +155,28 @@ type MediaListCollection struct {
 
 // List represents a categorized list of media entries.
 type List struct {
-	Entries []Entry    `json:"entries"` // Entries in the list.
-	Name    string     `json:"name"`    // Name of the list.
-	Status  ListStatus `json:"status"`  // Status of the list.
+	Entries []Entry `json:"entries"` // Entries in the list.
+	Name    string  `json:"name"`    // Name of the list.
+	Status  Status  `json:"status"`  // Status of the list.
 }
 
 // Entry represents a single media entry with a score.
 type Entry struct {
 	Media `json:"media"` // Media details.
-	Score float64        `json:"score"` // User-assigned score.
+
+	Score  *float64 `json:"score"`  // User-assigned score.
+	Status Status   `json:"status"` // User-assigned status.
 }
 
 // Media represents detailed information about a media entry.
 type Media struct {
+	ID           int64      `json:"id"`           //  ID of the media
 	AverageScore *int64     `json:"averageScore"` // Community average score.
 	Banner       *Image     `json:"bannerImage"`  // Banner image of the media.
 	Cover        CoverImage `json:"coverImage"`   // Cover image in different sizes.
 	IsAdult      bool       `json:"isAdult"`      // Indicates if the media is for adults.
 	MeanScore    *int64     `json:"meanScore"`    // Mean score of the media.
 	Popularity   int64      `json:"popularity"`   // Popularity ranking.
-	Status       Status     `json:"status"`       // Release status.
 	Type         Type       `json:"type"`         // Media type (anime/manga).
 }
 

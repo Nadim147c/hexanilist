@@ -250,6 +250,7 @@ func (a *Anilist) Login() error {
 }
 
 func (a *Anilist) GetCurrentUser() (User, error) {
+	slog.Info("Anilist.GetCurrentUser: Fetching current user")
 	var user User
 
 	query := GraphQL{Query: UserQuery, Variables: make(map[string]any)}
@@ -283,6 +284,7 @@ func (a *Anilist) GetList(id int64) (AnimeList, MangaList, error) {
 	var anime AnimeList
 	var manga MangaList
 
+	slog.Info("Anilist.GetList: Fetching anime list")
 	animeQuery := GraphQL{Query: MediaCollectionQuery, Variables: map[string]any{"userId": id, "type": "ANIME"}}
 	animeJsonBytes := animeQuery.Json()
 
@@ -308,6 +310,7 @@ func (a *Anilist) GetList(id int64) (AnimeList, MangaList, error) {
 		return anime, manga, err
 	}
 
+	slog.Info("Anilist.GetList: Fetching manga list")
 	mangaQuery := GraphQL{Query: MediaCollectionQuery, Variables: map[string]any{"userId": id, "type": "MANGA"}}
 	mangaJsonBytes := mangaQuery.Json()
 

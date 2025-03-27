@@ -3,7 +3,9 @@ query MediaListCollection($type: MediaType, $userId: Int) {
     lists {
       entries {
         score
+        status
         media {
+          id
           coverImage {
             extraLarge
             large
@@ -11,7 +13,6 @@ query MediaListCollection($type: MediaType, $userId: Int) {
             color
           }
           isAdult
-          status
           type
           averageScore
           bannerImage

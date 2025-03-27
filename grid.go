@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
+	"slices"
 )
 
 type Grid struct {
@@ -72,6 +73,18 @@ func GenerateHexagonRing(n int, x, y, radius float64) []Hexagon {
 		}
 
 	}
+
+	center := NewPoint(x, y)
+
+	slices.SortFunc(hexagons, func(i, j Hexagon) int {
+		if i.Center.Distance(center) < j.Center.Distance(center) {
+			return -1
+		}
+		if i.Center.Distance(center) > j.Center.Distance(center) {
+			return 1
+		}
+		return 0
+	})
 
 	return hexagons
 }
