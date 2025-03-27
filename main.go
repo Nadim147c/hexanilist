@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"image/color"
 	"log/slog"
+	"os"
 	"slices"
 
 	"github.com/disintegration/imaging"
@@ -29,6 +31,17 @@ type (
 )
 
 func main() {
+	cellSize := flag.Int("c", 50, "Size of each hexagon")
+	size := flag.Int("s", 2000, "Size of main image")
+
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [options]\n", os.Args[0])
+		fmt.Println("Options:")
+		flag.PrintDefaults()
+	}
+
+	flag.Parse()
+
 	anilist := NewAnilist(context.Background())
 	defer anilist.SaveToken()
 
@@ -133,10 +146,9 @@ func main() {
 		return 0
 	})
 
-	w, h := 2000, 2000
-	hexs := GenerateHexagonRing(len(nodes), float64(w/2), float64(h/2), 40)
+	hexs := GenerateHexagonRing(len(nodes), float64(*size/2), float64(*size/2), float64(*cellSize))
 
-	ctx := gg.NewContext(w, h)
+	ctx := gg.NewContext(*size, *size)
 	ctx.SetLineWidth(5)
 	ctx.SetStrokeStyle(gg.NewSolidPattern(color.Black))
 
