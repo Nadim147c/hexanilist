@@ -1,4 +1,4 @@
-module anilist
+module github.com/Nadim147c/hexanilist
 
 go 1.24.1
 
