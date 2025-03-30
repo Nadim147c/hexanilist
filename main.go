@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"image/color"
 	"log/slog"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/disintegration/imaging"
 	"github.com/fogleman/gg"
+	flag "github.com/spf13/pflag"
 )
 
 type NodeType uint64
@@ -22,17 +22,15 @@ const (
 	CharacterNode
 )
 
-type (
-	HexagonNode struct {
-		Type  NodeType
-		Image Image
-		Score int64
-	}
-)
+type HexagonNode struct {
+	Type  NodeType
+	Image Image
+	Score int64
+}
 
 func main() {
-	cellSize := flag.Int("c", 50, "Size of each hexagon")
-	size := flag.Int("s", 2000, "Size of main image")
+	cellSize := flag.IntP("cell", "c", 50, "Size of each hexagon")
+	size := flag.IntP("size", "s", 2000, "Size of main image")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options]\n", os.Args[0])
@@ -121,7 +119,6 @@ func main() {
 			case Dropped:
 				score -= 100
 			}
-
 			if user.Favourites.Manga.Has(entry.ID) {
 				score += 200
 			}
