@@ -2,6 +2,7 @@ package main
 
 import (
 	"math"
+	"slices"
 
 	"github.com/fogleman/gg"
 )
@@ -57,8 +58,8 @@ func (h Hexagon) Box() Box {
 		ySlice[i] = p.Y
 	}
 
-	start := NewPoint(min(xSlice[0], xSlice[1:]...), min(ySlice[0], ySlice[1:]...))
-	end := NewPoint(max(xSlice[0], xSlice[1:]...), max(ySlice[0], ySlice[1:]...))
+	start := NewPoint(Min(xSlice[0], xSlice[1:]...), Min(ySlice[0], ySlice[1:]...))
+	end := NewPoint(Max(xSlice[0], xSlice[1:]...), Max(ySlice[0], ySlice[1:]...))
 
 	return NewBox(start, end)
 }
@@ -74,4 +75,24 @@ func (h Hexagon) Neiboors() []Point {
 		n[i] = point
 	}
 	return n
+}
+
+func Min(a float64, b ...float64) float64 {
+	r := a
+	for v := range slices.Values(b) {
+		if v < r {
+			r = v
+		}
+	}
+	return r
+}
+
+func Max(a float64, b ...float64) float64 {
+	r := a
+	for v := range slices.Values(b) {
+		if v > r {
+			r = v
+		}
+	}
+	return r
 }
