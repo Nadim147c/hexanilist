@@ -129,10 +129,10 @@ type Status string
 
 const (
 	Current   Status = "CURRENT"   // Currently watching/reading.
-	Completed        = "COMPLETED" // Fully watched/read.
-	Dropped          = "DROPPED"   // Dropped midway.
-	Paused           = "PAUSED"    // Temporarily on hold.
-	Planning         = "PLANNING"  // Planned for future.
+	Completed Status = "COMPLETED" // Fully watched/read.
+	Dropped   Status = "DROPPED"   // Dropped midway.
+	Paused    Status = "PAUSED"    // Temporarily on hold.
+	Planning  Status = "PLANNING"  // Planned for future.
 )
 
 // Type defines whether the media is anime or manga.
@@ -140,7 +140,7 @@ type Type string
 
 const (
 	Anime Type = "ANIME" // Anime type media.
-	Manga      = "MANGA" // Manga type media.
+	Manga Type = "MANGA" // Manga type media.
 )
 
 // ListData represents the root structure for media lists.
