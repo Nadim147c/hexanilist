@@ -281,59 +281,108 @@ func (a *Anilist) GetCurrentUser() (User, error) {
 }
 
 func (a *Anilist) GetList(id int64) (AnimeList, MangaList, error) {
-	var anime AnimeList
-	var manga MangaList
-
-	slog.Info("Anilist.GetList: Fetching anime list")
-	animeQuery := GraphQL{Query: MediaCollectionQuery, Variables: map[string]any{"userId": id, "type": "ANIME"}}
-	animeJsonBytes := animeQuery.Json()
-
-	animeReq, err := http.NewRequestWithContext(a.ctx, http.MethodPost, Endpoint, bytes.NewBuffer(animeJsonBytes))
-	if err != nil {
-		return anime, manga, err
-	}
-	animeReq.Header.Set("Content-Type", "application/json")
-	animeReq.Header.Set("Accept", "application/json")
-
-	animeResp, err := a.http.Do(animeReq)
-	if err != nil {
-		return anime, manga, err
-	}
-	defer animeResp.Body.Close()
-
-	if animeResp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(animeResp.Body)
-		return anime, manga, fmt.Errorf("unexpected status code: %d, \b body: %s", animeResp.StatusCode, string(b))
+	type animeResult struct {
+		list AnimeList
+		err  error
 	}
 
-	if err := json.NewDecoder(animeResp.Body).Decode(&anime); err != nil {
-		return anime, manga, err
+	type mangaResult struct {
+		list MangaList
+		err  error
 	}
 
-	slog.Info("Anilist.GetList: Fetching manga list")
-	mangaQuery := GraphQL{Query: MediaCollectionQuery, Variables: map[string]any{"userId": id, "type": "MANGA"}}
-	mangaJsonBytes := mangaQuery.Json()
+	animeCh := make(chan animeResult, 1)
+	mangaCh := make(chan mangaResult, 1)
 
-	mangaReq, err := http.NewRequestWithContext(a.ctx, http.MethodPost, Endpoint, bytes.NewBuffer(mangaJsonBytes))
-	if err != nil {
-		return anime, manga, err
-	}
-	mangaReq.Header.Set("Content-Type", "application/json")
-	mangaReq.Header.Set("Accept", "application/json")
+	// Fetch anime list concurrently
+	go func() {
+		defer close(animeCh)
 
-	mangaResp, err := a.http.Do(mangaReq)
-	if err != nil {
-		return anime, manga, err
-	}
-	defer mangaResp.Body.Close()
+		slog.Info("Anilist.GetList: Fetching anime list")
+		animeQuery := GraphQL{Query: MediaCollectionQuery, Variables: map[string]any{"userId": id, "type": "ANIME"}}
+		animeJsonBytes := animeQuery.Json()
 
-	if mangaResp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(mangaResp.Body)
-		return anime, manga, fmt.Errorf("unexpected status code: %d, \b body: %s", mangaResp.StatusCode, string(b))
+		animeReq, err := http.NewRequestWithContext(a.ctx, http.MethodPost, Endpoint, bytes.NewBuffer(animeJsonBytes))
+		if err != nil {
+			animeCh <- animeResult{err: err}
+			return
+		}
+
+		animeReq.Header.Set("Content-Type", "application/json")
+		animeReq.Header.Set("Accept", "application/json")
+
+		animeResp, err := a.http.Do(animeReq)
+		if err != nil {
+			animeCh <- animeResult{err: err}
+			return
+		}
+		defer animeResp.Body.Close()
+
+		if animeResp.StatusCode != http.StatusOK {
+			b, _ := io.ReadAll(animeResp.Body)
+			animeCh <- animeResult{err: fmt.Errorf("unexpected status code: %d, body: %s", animeResp.StatusCode, string(b))}
+			return
+		}
+
+		var anime AnimeList
+		if err := json.NewDecoder(animeResp.Body).Decode(&anime); err != nil {
+			animeCh <- animeResult{err: err}
+			return
+		}
+
+		animeCh <- animeResult{list: anime}
+	}()
+
+	// Fetch manga list concurrently
+	go func() {
+		defer close(mangaCh)
+
+		slog.Info("Anilist.GetList: Fetching manga list")
+		mangaQuery := GraphQL{Query: MediaCollectionQuery, Variables: map[string]any{"userId": id, "type": "MANGA"}}
+		mangaJsonBytes := mangaQuery.Json()
+
+		mangaReq, err := http.NewRequestWithContext(a.ctx, http.MethodPost, Endpoint, bytes.NewBuffer(mangaJsonBytes))
+		if err != nil {
+			mangaCh <- mangaResult{err: err}
+			return
+		}
+
+		mangaReq.Header.Set("Content-Type", "application/json")
+		mangaReq.Header.Set("Accept", "application/json")
+
+		mangaResp, err := a.http.Do(mangaReq)
+		if err != nil {
+			mangaCh <- mangaResult{err: err}
+			return
+		}
+		defer mangaResp.Body.Close()
+
+		if mangaResp.StatusCode != http.StatusOK {
+			b, _ := io.ReadAll(mangaResp.Body)
+			mangaCh <- mangaResult{err: fmt.Errorf("unexpected status code: %d, body: %s", mangaResp.StatusCode, string(b))}
+			return
+		}
+
+		var manga MangaList
+		if err := json.NewDecoder(mangaResp.Body).Decode(&manga); err != nil {
+			mangaCh <- mangaResult{err: err}
+			return
+		}
+
+		mangaCh <- mangaResult{list: manga}
+	}()
+
+	// Wait for both results
+	animeRes := <-animeCh
+	mangaRes := <-mangaCh
+
+	// Handle errors - return the first error encountered
+	if animeRes.err != nil {
+		return AnimeList{}, MangaList{}, animeRes.err
+	}
+	if mangaRes.err != nil {
+		return AnimeList{}, MangaList{}, mangaRes.err
 	}
 
-	if err := json.NewDecoder(mangaResp.Body).Decode(&manga); err != nil {
-		return anime, manga, err
-	}
-	return anime, manga, nil
+	return animeRes.list, mangaRes.list, nil
 }
