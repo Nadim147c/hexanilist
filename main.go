@@ -9,6 +9,7 @@ import (
 	"os"
 	"runtime"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -32,19 +33,30 @@ type HexagonNode struct {
 	Score int
 }
 
-func main() {
-	cellSize := pflag.IntP("cell", "c", 50, "Size of each hexagon")
-	size := pflag.IntP("size", "s", 2000, "Size of main image")
-	username := pflag.StringP("user", "u", "", "Username of Anilist")
+var (
+	CellSize = 50
+	Size     = 2000
+	Username = ""
+	Output   = "hexagon.png"
+)
+
+func init() {
+	pflag.IntVarP(&CellSize, "cell", "c", CellSize, "Size of each hexagon")
+	pflag.IntVarP(&Size, "size", "s", Size, "Size of main image")
+	pflag.StringVarP(&Username, "user", "u", Username, "Username of Anilist")
+	pflag.StringVarP(&Output, "out", "o", Output, "Output file name")
 
 	pflag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options]\n", os.Args[0])
-		fmt.Println("Options:")
-		pflag.PrintDefaults()
+		fmt.Fprint(os.Stderr, "Generate Hexagon grid from anilist media\n\n")
+		fmt.Fprintln(os.Stderr, "Options:")
+		fmt.Fprintln(os.Stderr, pflag.CommandLine.FlagUsages())
 	}
 
 	pflag.Parse()
+}
 
+func main() {
 	anilist := NewAnilist(context.Background())
 	defer anilist.SaveToken()
 
@@ -54,9 +66,9 @@ func main() {
 
 	var user User
 
-	if *username != "" {
-		slog.Info("Fetching user data", "username", *username)
-		u, err := anilist.GetUser(*username)
+	if Username != "" {
+		slog.Info("Fetching user data", "username", Username)
+		u, err := anilist.GetUser(Username)
 		if err != nil {
 			panic(err)
 		}
@@ -82,15 +94,19 @@ func main() {
 	nodes := buildNodes(user, anime, manga)
 	slices.SortFunc(nodes, func(i, j HexagonNode) int { return j.Score - i.Score })
 
-	hexs := GenerateHexagonRing(len(nodes), float64(*size/2), float64(*size/2), float64(*cellSize))
-	ctx := gg.NewContext(*size, *size)
+	hexs := GenerateHexagonRing(len(nodes), float64(Size/2), float64(Size/2), float64(CellSize))
+	ctx := gg.NewContext(Size, Size)
 	ctx.SetLineWidth(5)
 	ctx.SetStrokeStyle(gg.NewSolidPattern(color.Black))
 
 	renderHexagons(ctx, hexs, nodes)
 
-	ctx.SavePNG("hexagon.png")
-	slog.Info("Saved to hexagon.png", "took", time.Since(start))
+	if !strings.HasSuffix(Output, ".png") {
+		Output += ".png"
+	}
+
+	ctx.SavePNG(Output)
+	slog.Info("Saving output", "output", Output, "took", time.Since(start))
 }
 
 func buildNodes(user User, anime AnimeList, manga MangaList) []HexagonNode {
