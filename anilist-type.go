@@ -59,18 +59,22 @@ func (i Image) Download() (string, error) {
 	return filePath, nil
 }
 
-// User represents the root structure of a user profile.
-type User struct {
-	UserData `json:"data"`
-}
-
-// UserData encapsulates the main data for a user.
-type UserData struct {
-	Viewer `json:"Viewer"`
-}
-
-// Viewer contains detailed information about a user, including avatar, banner, favorites, and identity.
+// Viewer represents the root structure of a user profile.
 type Viewer struct {
+	Data struct {
+		User User `json:"Viewer"`
+	} `json:"data"`
+}
+
+// Viewer represents the root structure of a user profile.
+type Searched struct {
+	Data struct {
+		User User `json:"User"`
+	} `json:"data"`
+}
+
+// User contains detailed information about a user, including avatar, banner, favorites, and identity.
+type User struct {
 	Avatar     Avatar     `json:"avatar"`      // Avatar images in different sizes.
 	Banner     Image      `json:"bannerImage"` // Banner image associated with the user profile.
 	Favourites Favourites `json:"favourites"`  // Favorite anime, manga, and characters.

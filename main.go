@@ -35,6 +35,7 @@ type HexagonNode struct {
 func main() {
 	cellSize := pflag.IntP("cell", "c", 50, "Size of each hexagon")
 	size := pflag.IntP("size", "s", 2000, "Size of main image")
+	username := pflag.StringP("user", "u", "", "Username of Anilist")
 
 	pflag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options]\n", os.Args[0])
@@ -51,9 +52,21 @@ func main() {
 		panic(err)
 	}
 
-	user, err := anilist.GetCurrentUser()
-	if err != nil {
-		panic(err)
+	var user User
+
+	if *username != "" {
+		slog.Info("Fetching user data", "username", *username)
+		u, err := anilist.GetUser(*username)
+		if err != nil {
+			panic(err)
+		}
+		user = u.Data.User
+	} else {
+		u, err := anilist.GetCurrentUser()
+		if err != nil {
+			panic(err)
+		}
+		user = u.Data.User
 	}
 
 	fmt.Println("User ID:", user.ID)

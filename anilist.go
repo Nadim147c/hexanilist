@@ -35,6 +35,9 @@ const (
 //go:embed media-collection.graphql
 var MediaCollectionQuery string
 
+//go:embed viewer.graphql
+var ViewerQuery string
+
 //go:embed user.graphql
 var UserQuery string
 
@@ -249,11 +252,42 @@ func (a *Anilist) Login() error {
 	return nil
 }
 
-func (a *Anilist) GetCurrentUser() (User, error) {
+func (a *Anilist) GetCurrentUser() (Viewer, error) {
 	slog.Info("Anilist.GetCurrentUser: Fetching current user")
-	var user User
+	var user Viewer
 
-	query := GraphQL{Query: UserQuery, Variables: make(map[string]any)}
+	query := GraphQL{Query: ViewerQuery, Variables: make(map[string]any)}
+	jsonBytes := query.Json()
+
+	req, err := http.NewRequestWithContext(a.ctx, http.MethodPost, Endpoint, bytes.NewBuffer(jsonBytes))
+	if err != nil {
+		return user, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := a.http.Do(req)
+	if err != nil {
+		return user, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return user, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return user, err
+	}
+
+	return user, nil
+}
+
+func (a *Anilist) GetUser(username string) (Searched, error) {
+	slog.Info("Anilist.GetCurrentUser: Fetching current user")
+	var user Searched
+
+	query := GraphQL{Query: UserQuery, Variables: map[string]any{"name": username}}
 	jsonBytes := query.Json()
 
 	req, err := http.NewRequestWithContext(a.ctx, http.MethodPost, Endpoint, bytes.NewBuffer(jsonBytes))

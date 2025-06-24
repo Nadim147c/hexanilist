@@ -1,5 +1,5 @@
-query Query($name: String) {
-  User(name: $name) {
+query User {
+  Viewer {
     id
     name
     avatar {
