@@ -14,22 +14,18 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
 	"golang.org/x/oauth2"
 )
 
 const (
-	AnilistRedirectURL = "https://anilist.co/api/v2/oauth/pin"
-	AnilistAuthURL     = "https://anilist.co/api/v2/oauth/authorize"
-	AnilistTokenURL    = "https://anilist.co/api/v2/oauth/token"
+	AnilistDeveloperPortal = "https://anilist.co/settings/developer"
+	AnilistRedirectURL     = "https://anilist.co/api/v2/oauth/pin"
+	AnilistAuthURL         = "https://anilist.co/api/v2/oauth/authorize"
+	AnilistTokenURL        = "https://anilist.co/api/v2/oauth/token"
 
 	Endpoint = "https://graphql.anilist.co"
-)
-
-const (
-	AnsiGreen = "\033[32m" // ANSI escape code for AnsiBlue
-	AnsiBlue  = "\033[34m" // ANSI escape code for blue
-	AnsiReset = "\033[0m"  // Reset color
-
 )
 
 //go:embed media-collection.graphql
@@ -46,7 +42,7 @@ type GraphQL struct {
 	Variables map[string]any `json:"variables"`
 }
 
-func (q GraphQL) Json() []byte {
+func (q GraphQL) JSON() []byte {
 	b, err := json.Marshal(q)
 	if err != nil {
 		slog.Error("Query.String: Failed to Marshal query")
@@ -74,7 +70,7 @@ func saveCredentials(credentials Credentials) error {
 		return err
 	}
 
-	clientPath := filepath.Join(config, "anilist-gird", "client.json")
+	clientPath := filepath.Join(config, "hexanilist", "client.json")
 
 	dir := filepath.Dir(clientPath)
 	if err := os.MkdirAll(dir, 0700); err != nil {
@@ -97,7 +93,7 @@ func loadCredentials() (Credentials, error) {
 		return credentials, err
 	}
 
-	clientPath := filepath.Join(config, "anilist-gird", "client.json")
+	clientPath := filepath.Join(config, "hexanilist", "client.json")
 
 	file, err := os.Open(clientPath)
 	if err != nil {
@@ -112,21 +108,36 @@ func loadCredentials() (Credentials, error) {
 	return credentials, nil
 }
 
+var (
+	TitleStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("2")).Bold(true)   // green color
+	URLStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("4")).Italic(true) // blue color
+)
+
 func NewAnilist(ctx context.Context) *Anilist {
 	cred, err := loadCredentials()
 	if err != nil || cred.ID == "" || cred.Secret == "" {
 		var id string
 		var secret string
 
-		fmt.Printf("%sYou need create an Anilist app!%s\n", AnsiGreen, AnsiReset)
-		fmt.Printf(" - Goto %s%s%s\n", AnsiBlue, "https://anilist.co/settings/developer", AnsiReset)
-		fmt.Println(" - Create New Client")
-		fmt.Printf(" - Give it name and set Redirect URL to %s%s%s\n\n", AnsiBlue, AnilistRedirectURL, AnsiReset)
+		fmt.Printf(
+			"%s\n - Goto %s\n - Create A New Client\n - Give it name and set Redirect URL to %s\n\n",
+			TitleStyle.Render("You need create an Anilist app!"),
+			URLStyle.Render(AnilistDeveloperPortal),
+			URLStyle.Render(AnilistRedirectURL),
+		)
 
-		fmt.Print("Enter Client ID: ")
-		fmt.Scanln(&id)
-		fmt.Print("Enter Client Secret: ")
-		fmt.Scanln(&secret)
+		huh.NewInput().
+			Title("Anilist API Client ID").
+			Value(&id).
+			Run()
+
+		fmt.Println("Client ID: ", id)
+
+		huh.NewInput().
+			Title("Anilist API Client Secret").
+			EchoMode(huh.EchoModePassword).
+			Value(&secret).
+			Run()
 
 		cred = Credentials{
 			ID:     strings.TrimSpace(id),
@@ -182,7 +193,7 @@ func (a *Anilist) SaveToken() error {
 		return err
 	}
 
-	tokenPath := filepath.Join(config, "anilist-gird", "access.json")
+	tokenPath := filepath.Join(config, "hexanilist", "access.json")
 
 	dir := filepath.Dir(tokenPath)
 	if err := os.MkdirAll(dir, 0700); err != nil {
@@ -204,7 +215,7 @@ func (a *Anilist) LoadToken() (*oauth2.Token, error) {
 		return nil, err
 	}
 
-	tokenPath := filepath.Join(config, "anilist-gird", "access.json")
+	tokenPath := filepath.Join(config, "hexanilist", "access.json")
 
 	file, err := os.Open(tokenPath)
 	if err != nil {
@@ -233,12 +244,19 @@ func (a *Anilist) Login() error {
 		slog.Warn("Anilist.Login: Failed to load access-token from disk", "reason", err)
 	}
 
-	fmt.Printf("%sOpen the following URL in your browser and authorize the application:%s\n", AnsiGreen, AnsiReset)
-	fmt.Printf(" - %s%s%s\n\n", AnsiBlue, a.LoginURL(), AnsiReset)
+	fmt.Printf(
+		"%s\n - %s\n\n",
+		URLStyle.Render(a.LoginURL()),
+		TitleStyle.Render("Open the following URL in your browser and authorize the application"),
+	)
 
 	var code string
 	fmt.Print("Paste the code: ")
-	fmt.Scanln(&code)
+	huh.NewInput().
+		Title("Paste the code").
+		EchoMode(huh.EchoModePassword).
+		Value(&code).
+		Run()
 
 	code = strings.TrimSpace(code)
 	if code == "" {
@@ -252,21 +270,27 @@ func (a *Anilist) Login() error {
 	return nil
 }
 
+func (a *Anilist) makeRequest(q GraphQL) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(
+		a.ctx, http.MethodPost, Endpoint,
+		bytes.NewBuffer(q.JSON()),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	return a.http.Do(req)
+}
+
 func (a *Anilist) GetCurrentUser() (Viewer, error) {
 	slog.Info("Anilist.GetCurrentUser: Fetching current user")
 	var user Viewer
 
 	query := GraphQL{Query: ViewerQuery, Variables: make(map[string]any)}
-	jsonBytes := query.Json()
-
-	req, err := http.NewRequestWithContext(a.ctx, http.MethodPost, Endpoint, bytes.NewBuffer(jsonBytes))
-	if err != nil {
-		return user, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := a.http.Do(req)
+	resp, err := a.makeRequest(query)
 	if err != nil {
 		return user, err
 	}
@@ -287,17 +311,12 @@ func (a *Anilist) GetUser(username string) (Searched, error) {
 	slog.Info("Anilist.GetCurrentUser: Fetching current user")
 	var user Searched
 
-	query := GraphQL{Query: UserQuery, Variables: map[string]any{"name": username}}
-	jsonBytes := query.Json()
-
-	req, err := http.NewRequestWithContext(a.ctx, http.MethodPost, Endpoint, bytes.NewBuffer(jsonBytes))
-	if err != nil {
-		return user, err
+	query := GraphQL{
+		Query:     UserQuery,
+		Variables: map[string]any{"name": username},
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
 
-	resp, err := a.http.Do(req)
+	resp, err := a.makeRequest(query)
 	if err != nil {
 		return user, err
 	}
@@ -314,109 +333,60 @@ func (a *Anilist) GetUser(username string) (Searched, error) {
 	return user, nil
 }
 
-func (a *Anilist) GetList(id int64) (AnimeList, MangaList, error) {
-	type animeResult struct {
-		list AnimeList
-		err  error
+func (a *Anilist) GetList(id int64) (anime AnimeList, manga MangaList, err error) {
+	slog.Info("Anilist.GetList: Fetching anime list")
+
+	// --- Fetch Anime List ---
+	queryAnime := GraphQL{
+		Query:     MediaCollectionQuery,
+		Variables: map[string]any{"userId": id, "type": "ANIME"},
 	}
 
-	type mangaResult struct {
-		list MangaList
-		err  error
+	resp, err := a.makeRequest(queryAnime)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		return anime, manga, fmt.Errorf(
+			"unexpected status code (anime): %d, body: %s",
+			resp.StatusCode,
+			string(b),
+		)
 	}
 
-	animeCh := make(chan animeResult, 1)
-	mangaCh := make(chan mangaResult, 1)
-
-	// Fetch anime list concurrently
-	go func() {
-		defer close(animeCh)
-
-		slog.Info("Anilist.GetList: Fetching anime list")
-		animeQuery := GraphQL{Query: MediaCollectionQuery, Variables: map[string]any{"userId": id, "type": "ANIME"}}
-		animeJsonBytes := animeQuery.Json()
-
-		animeReq, err := http.NewRequestWithContext(a.ctx, http.MethodPost, Endpoint, bytes.NewBuffer(animeJsonBytes))
-		if err != nil {
-			animeCh <- animeResult{err: err}
-			return
-		}
-
-		animeReq.Header.Set("Content-Type", "application/json")
-		animeReq.Header.Set("Accept", "application/json")
-
-		animeResp, err := a.http.Do(animeReq)
-		if err != nil {
-			animeCh <- animeResult{err: err}
-			return
-		}
-		defer animeResp.Body.Close()
-
-		if animeResp.StatusCode != http.StatusOK {
-			b, _ := io.ReadAll(animeResp.Body)
-			animeCh <- animeResult{err: fmt.Errorf("unexpected status code: %d, body: %s", animeResp.StatusCode, string(b))}
-			return
-		}
-
-		var anime AnimeList
-		if err := json.NewDecoder(animeResp.Body).Decode(&anime); err != nil {
-			animeCh <- animeResult{err: err}
-			return
-		}
-
-		animeCh <- animeResult{list: anime}
-	}()
-
-	// Fetch manga list concurrently
-	go func() {
-		defer close(mangaCh)
-
-		slog.Info("Anilist.GetList: Fetching manga list")
-		mangaQuery := GraphQL{Query: MediaCollectionQuery, Variables: map[string]any{"userId": id, "type": "MANGA"}}
-		mangaJsonBytes := mangaQuery.Json()
-
-		mangaReq, err := http.NewRequestWithContext(a.ctx, http.MethodPost, Endpoint, bytes.NewBuffer(mangaJsonBytes))
-		if err != nil {
-			mangaCh <- mangaResult{err: err}
-			return
-		}
-
-		mangaReq.Header.Set("Content-Type", "application/json")
-		mangaReq.Header.Set("Accept", "application/json")
-
-		mangaResp, err := a.http.Do(mangaReq)
-		if err != nil {
-			mangaCh <- mangaResult{err: err}
-			return
-		}
-		defer mangaResp.Body.Close()
-
-		if mangaResp.StatusCode != http.StatusOK {
-			b, _ := io.ReadAll(mangaResp.Body)
-			mangaCh <- mangaResult{err: fmt.Errorf("unexpected status code: %d, body: %s", mangaResp.StatusCode, string(b))}
-			return
-		}
-
-		var manga MangaList
-		if err := json.NewDecoder(mangaResp.Body).Decode(&manga); err != nil {
-			mangaCh <- mangaResult{err: err}
-			return
-		}
-
-		mangaCh <- mangaResult{list: manga}
-	}()
-
-	// Wait for both results
-	animeRes := <-animeCh
-	mangaRes := <-mangaCh
-
-	// Handle errors - return the first error encountered
-	if animeRes.err != nil {
-		return AnimeList{}, MangaList{}, animeRes.err
-	}
-	if mangaRes.err != nil {
-		return AnimeList{}, MangaList{}, mangaRes.err
+	if err := json.NewDecoder(resp.Body).Decode(&anime); err != nil {
+		return anime, manga, err
 	}
 
-	return animeRes.list, mangaRes.list, nil
+	// --- Fetch Manga List ---
+	slog.Info("Anilist.GetList: Fetching manga list")
+
+	queryManga := GraphQL{
+		Query:     MediaCollectionQuery,
+		Variables: map[string]any{"userId": id, "type": "MANGA"},
+	}
+
+	resp, err = a.makeRequest(queryManga)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		return anime, manga, fmt.Errorf(
+			"unexpected status code (manga): %d, body: %s",
+			resp.StatusCode,
+			string(b),
+		)
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&manga); err != nil {
+		return anime, manga, err
+	}
+
+	return
 }

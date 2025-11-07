@@ -13,6 +13,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/charmbracelet/bubbles/progress"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/log"
 	"github.com/disintegration/imaging"
 	"github.com/fogleman/gg"
 	"github.com/spf13/pflag"
@@ -41,6 +44,8 @@ var (
 )
 
 func init() {
+	slog.SetDefault(slog.New(log.New(os.Stderr)))
+
 	pflag.IntVarP(&CellSize, "cell", "c", CellSize, "Size of each hexagon")
 	pflag.IntVarP(&Size, "size", "s", Size, "Size of main image")
 	pflag.StringVarP(&Username, "user", "u", Username, "Username of Anilist")
@@ -208,27 +213,71 @@ func calculateScore(userScore *float64, status Status, isFavorite bool) int {
 	return score
 }
 
+type model struct {
+	total     int
+	completed int
+	progress  progress.Model
+	done      bool
+}
+
+type progressMsg struct{}
+
+func (m model) Init() tea.Cmd { return nil }
+
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg.(type) {
+	case progressMsg:
+		m.completed++
+		if m.completed >= m.total {
+			m.done = true
+			return m, tea.Quit
+		}
+	}
+	return m, nil
+}
+
+func (m model) View() string {
+	if m.done {
+		return "✅ Rendering complete!\n"
+	}
+	pct := float64(m.completed) / float64(m.total)
+	return fmt.Sprintf(
+		"Rendering hexagons... (%d/%d)\n%s\n",
+		m.completed, m.total,
+		m.progress.ViewAs(pct),
+	)
+}
+
 func renderHexagons(ctx *gg.Context, hexs []Hexagon, nodes []HexagonNode) {
-	var wg sync.WaitGroup
 	var mu sync.Mutex
+
 	maxConcurrent := runtime.NumCPU()
 	sem := make(chan struct{}, maxConcurrent)
 
-	for i, hex := range hexs {
-		wg.Add(1)
-		sem <- struct{}{} // acquire
+	p := tea.NewProgram(model{
+		total:    len(hexs),
+		progress: progress.New(progress.WithDefaultGradient()),
+	})
 
-		go func(i int, hex Hexagon) {
-			defer wg.Done()
-			defer func() { <-sem }() // release
+	go func() {
+		for i, hex := range hexs {
+			sem <- struct{}{} // acquire
+			go func() {
+				defer func() { <-sem }() // release
 
-			if err := renderSingleHexagon(ctx, hex, nodes[i], &mu); err != nil {
-				slog.Error("Failed to render hexagon", "index", i, "error", err)
-			}
-		}(i, hex)
+				if err := renderSingleHexagon(ctx, hex, nodes[i], &mu); err != nil {
+					slog.Error("Failed to render hexagon", "index", i, "error", err)
+				}
+
+				p.Send(progressMsg{})
+			}()
+
+		}
+	}()
+
+	if _, err := p.Run(); err != nil {
+		slog.Error("TUI failed", "error", err)
 	}
-
-	wg.Wait()
 }
 
 func renderSingleHexagon(ctx *gg.Context, hex Hexagon, node HexagonNode, mu *sync.Mutex) error {
