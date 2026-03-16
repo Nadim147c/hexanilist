@@ -1,99 +1,94 @@
 export interface AnilistData {
-  user: User;
-  anime: List[];
-  manga: List[];
+  user: User
+  anime: List[]
+  manga: List[]
 }
 
 export interface UserResponse {
-  data: { User: User };
+  data: { User: User }
 }
 
 export interface User {
-  avatar: Avatar;
-  bannerImage: string;
-  favourites: Favourites;
-  id: number;
-  name: string;
+  avatar: Avatar
+  bannerImage: string
+  favourites: Favourites
+  id: number
+  name: string
 }
 
 export interface Avatar {
-  large: string;
-  medium: string;
+  large: string
+  medium: string
 }
 
 export interface Favourites {
-  anime: FavouriteNode;
-  manga: FavouriteNode;
-  characters: Characters;
+  anime: FavouriteNode
+  manga: FavouriteNode
+  characters: Characters
 }
 
 export interface FavouriteNode {
-  nodes: Node[];
+  nodes: Node[]
 }
 
 export interface Node {
-  id: number;
+  id: number
 }
 
 export interface Characters {
-  nodes: CharactersNode[];
+  nodes: CharactersNode[]
 }
 
 export interface CharactersNode {
-  id: number;
-  image: Avatar;
+  id: number
+  image: Avatar
 }
 
-export type Status =
-  | 'CURRENT'
-  | 'COMPLETED'
-  | 'DROPPED'
-  | 'PAUSED'
-  | 'PLANNING';
+export type Status = "CURRENT" | "COMPLETED" | "DROPPED" | "PAUSED" | "PLANNING"
 
-export type MediaType = 'ANIME' | 'MANGA';
+export type MediaType = "ANIME" | "MANGA"
 export interface ListData {
-  MediaListCollection: MediaListCollection;
+  MediaListCollection: MediaListCollection
 }
 
 export interface MediaListCollection {
-  lists: List[];
+  lists: List[]
 }
 
 export interface List {
-  entries: Entry[];
-  name: string;
-  status: Status;
+  entries: Entry[]
+  name: string
+  status: Status
 }
 
 export interface Entry {
-  media: Media;
-  score: number | null;
-  status: Status;
+  media: Media
+  score: number | null
+  status: Status
 }
 
 export interface Media {
-  id: number;
-  averageScore?: number | null;
-  bannerImage?: string | null;
-  coverImage: CoverImage;
-  isAdult: boolean;
-  meanScore: number | null;
-  popularity: number;
-  type: MediaType;
+  id: number
+  averageScore?: number | null
+  bannerImage?: string | null
+  coverImage: CoverImage
+  isAdult: boolean
+  meanScore: number | null
+  popularity: number
+  type: MediaType
 }
 
 export interface CoverImage {
-  color: string | null;
-  extraLarge: string;
-  large: string;
-  medium: string;
+  color: string | null
+  extraLarge: string
+  large: string
+  medium: string
 }
 
 export interface AnimeList {
-  data: ListData;
+  data: ListData
 }
 
 export interface MangaList {
-  data: ListData;
+  data: ListData
 }
