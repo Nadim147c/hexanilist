@@ -1,6 +1,8 @@
+import { useState } from "react";
 import Header from "./components/Header";
 import Searchbar from "./components/Searchbar";
-import { useState } from "react";
+import HexGrid from "./components/HexGrid";
+import Footer from "./components/Footer";
 
 export default function App() {
   const [loading, setLoading] = useState<boolean>(false)
@@ -27,7 +29,10 @@ export default function App() {
         </h2>
         <Searchbar onSearch={handleSearch} loading={loading} />
 
+        <HexGrid />
       </main>
+
+      <Footer />
     </>
   )
 }
