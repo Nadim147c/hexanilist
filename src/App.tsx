@@ -36,7 +36,13 @@ interface AnilistCache {
   data: AnilistData
 }
 
-async function generate(username: string) {
+interface Options {
+  strokeColor?: string
+  strokeWidth?: number
+  hexagonRadius?: number
+}
+
+async function generate(username: string, opts: Options = {}) {
   let data: AnilistData
   let loadedFromCache = false
   // load from cache if available
@@ -62,7 +68,7 @@ async function generate(username: string) {
   }
 
   const nodes = createNodes(data!)
-  const hex = generateHexagonRing(nodes.length, 20)
+  const hex = generateHexagonRing(nodes.length, opts.hexagonRadius ?? 50)
 
   if (nodes.length !== hex.hexagons.length) {
     throw new Error(
@@ -112,6 +118,14 @@ async function generate(username: string) {
     )
 
     ctx.restore()
+
+    if (opts.strokeWidth) {
+      hexagon.draw(ctx)
+      ctx.strokeStyle = opts.strokeColor || "black"
+      ctx.lineWidth = opts.strokeWidth
+      ctx.stroke()
+      ctx.restore()
+    }
   })
 
   // Optional: return the data URL if you need to save it
@@ -125,7 +139,11 @@ export default function App() {
     setLoading(true)
     try {
       // TODO: edit this url
-      const url = await generate(username)
+      const url = await generate(username, {
+        hexagonRadius: 50,
+        strokeWidth: 4,
+        strokeColor: "black", // or use any hex color
+      })
       // download the image
       const link = document.createElement("a")
       link.download = `${username}.png`
