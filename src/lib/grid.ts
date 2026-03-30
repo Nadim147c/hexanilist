@@ -84,24 +84,32 @@ export function generateHexagonRing(
     return i.center.distance(center) - j.center.distance(center)
   })
 
-  const x = hexagons.reduce((max, hex) => {
-    return Math.max(max, Math.abs(hex.box().x + hex.box().w))
-  }, 0)
+  let minX = Infinity,
+    maxX = -Infinity
+  let minY = Infinity,
+    maxY = -Infinity
 
-  const y = hexagons.reduce((max, hex) => {
-    return Math.max(max, Math.abs(hex.box().y + hex.box().h))
-  }, 0)
+  hexagons.forEach(hex => {
+    minX = Math.min(minX, hex.center.x - hex.radius)
+    maxX = Math.max(maxX, hex.center.x + hex.radius)
+    minY = Math.min(minY, hex.center.y - hex.radius)
+    maxY = Math.max(maxY, hex.center.y + hex.radius)
+  })
 
-  const padding = 30
-  const moveX = x / 2 + padding
-  const moveY = y / 2 + padding
+  const totalWidth = maxX - minX
+  const totalHeight = maxY - minY
 
-  center.setPosition(moveX, moveY)
+  const padding = 50
+
+  const moveX = -minX + padding
+  const moveY = -minY + padding
+
   hexagons.forEach(hex => hex.move(moveX, moveY))
+  center.setPosition(center.x + moveX, center.y + moveY)
 
   return {
-    height: y + padding * 2,
-    width: x + padding * 2,
+    width: totalWidth + padding * 2,
+    height: totalHeight + padding * 2,
     center,
     hexagons,
   }
