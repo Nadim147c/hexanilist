@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { cn } from "../../lib/utils"
+import { useState } from "react"
+import { cn } from "../lib/utils"
 import hertaa from "../assets/hertaa.gif"
 
 export default function HexGridContainer() {
@@ -7,35 +7,36 @@ export default function HexGridContainer() {
   const [data, setData] = useState(false)
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 pb-10">
-      <div className={cn(
-        "relative min-h-[400px] md:min-h-[600px] w-full bg-card",
-        "border border-border rounded-3xl overflow-hidden",
-        "flex flex-col items-center justify-center p-6 transition-all"
-      )}>
-
+    <div className="mx-auto w-full max-w-5xl px-4 pb-10">
+      <div
+        className={cn(
+          "bg-card relative min-h-[400px] w-full md:min-h-[600px]",
+          "border-border overflow-hidden rounded-3xl border",
+          "flex flex-col items-center justify-center p-6 transition-all"
+        )}
+      >
         {!data ? (
           <div className="z-10 flex flex-col items-center space-y-4">
-            <div className="w-72 h-72 flex items-center justify-center overflow-hidden">
+            <div className="flex h-72 w-72 items-center justify-center overflow-hidden">
               <img
                 src={hertaa}
                 alt="Hertaa kawai gif"
-                className="w-full h-full object-cover"
+                className="h-full w-full object-cover"
               />
             </div>
-            <p className="text-muted font-medium text-center max-w-xs">
+            <p className="text-muted max-w-xs text-center font-medium">
               Transform your anime and manga history into a beautiful,
               minimalist hexagonal visualization.
             </p>
           </div>
         ) : (
-          <div className="z-10 w-full h-full flex items-center justify-center">
-
+          <div className="z-10 flex h-full w-full items-center justify-center">
             {/* handle your canvas output here.. */}
-            <h1 className="text-white font-black text-2xl">HEXAGON CANVAS READY</h1>
+            <h1 className="text-2xl font-black text-white">
+              HEXAGON CANVAS READY
+            </h1>
           </div>
         )}
-
       </div>
     </div>
   )

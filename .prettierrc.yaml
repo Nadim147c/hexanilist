@@ -7,4 +7,4 @@ bracketSpacing: true
 arrowParens: avoid
 semi: false
 endOfLine: lf
-plugins: ['prettier-plugin-tailwindcss']
+plugins: ["prettier-plugin-tailwindcss"]

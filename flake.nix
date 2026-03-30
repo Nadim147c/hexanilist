@@ -28,7 +28,7 @@
           name = "media";
           buildInputs = with pkgs; [
             typescript-go
-            tailwindcss-language-server
+            prettier
             just-lsp
             just
           ];
