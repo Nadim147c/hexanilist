@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Header from "./components/Header";
 import Searchbar from "./components/Searchbar";
-import HexGrid from "./components/HexGrid";
+import HexGridContainer from "./components/HexGridContainer";
 import Footer from "./components/Footer";
 
 export default function App() {
@@ -29,7 +29,7 @@ export default function App() {
         </h2>
         <Searchbar onSearch={handleSearch} loading={loading} />
 
-        <HexGrid />
+        <HexGridContainer />
       </main>
 
       <Footer />
