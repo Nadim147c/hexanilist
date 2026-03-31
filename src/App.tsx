@@ -134,21 +134,21 @@ async function generate(username: string, opts: Options = {}) {
 
 export default function App() {
   const [loading, setLoading] = useState<boolean>(false)
+  const [result, setResult] = useState<string | null>(null)
+  const [username, setUsername] = useState<string | null>(null)
 
   const handleSearch = async (username: string) => {
     setLoading(true)
+    setResult(null)
+    setUsername(username)
     try {
-      // TODO: edit this url
       const url = await generate(username, {
         hexagonRadius: 50,
         strokeWidth: 4,
         strokeColor: "black", // or use any hex color
       })
-      // download the image
-      const link = document.createElement("a")
-      link.download = `${username}.png`
-      link.href = url
-      link.click()
+      setResult(url)
+
       console.log("Searching for:", username)
     } catch (err) {
       console.error("Error fetching data:", err)
@@ -168,7 +168,7 @@ export default function App() {
         </h2>
         <Searchbar onSearch={handleSearch} loading={loading} />
 
-        <HexGridContainer />
+        <HexGridContainer imageResult={result} username={username} />
       </main>
 
       <Footer />
