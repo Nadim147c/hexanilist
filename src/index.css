@@ -1,21 +1,20 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #1A202E;
-  --color-card: #11161D;
+  --color-bg: #1a202e;
+  --color-card: #11161d;
 
-  --color-accent: #ED5B82;
+  --color-accent: #ed5b82;
   --color-accent-hover: #d44a6f;
 
-  --color-text: #E2E8F0;
-  --color-muted: #64748B;
+  --color-text: #e2e8f0;
+  --color-muted: #64748b;
 
   --color-border: rgba(255, 255, 255, 0.08);
 }
 
 @layer base {
   body {
-    @apply m-0 min-h-screen bg-bg text-text;
+    @apply bg-bg text-text m-0 min-h-screen;
   }
-
 }

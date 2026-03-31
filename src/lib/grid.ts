@@ -52,7 +52,7 @@ export function generateHexagonRing(
     empty.set(p, true)
   }
 
-  for (let i = 0; i < totalHexagon - 2; i++) {
+  for (let i = 0; i < totalHexagon - 1; i++) {
     let d = Infinity
     let hexCenter = centerHex.center
     for (const point of empty.keys()) {
@@ -84,20 +84,33 @@ export function generateHexagonRing(
     return i.center.distance(center) - j.center.distance(center)
   })
 
-  // Move all hexagons so that the whole ring grid can be drawn in
-  // html canvas without going out of bounds.
-  const last = hexagons.at(-1)!
+  let minX = Infinity,
+    maxX = -Infinity
+  let minY = Infinity,
+    maxY = -Infinity
 
-  const lastX = last.center.x
-  const lastY = last.center.y
-  const height = (lastY + radius * 2) * 20
-  const width = (lastX + radius * 2) * 20
+  hexagons.forEach(hex => {
+    minX = Math.min(minX, hex.center.x - hex.radius)
+    maxX = Math.max(maxX, hex.center.x + hex.radius)
+    minY = Math.min(minY, hex.center.y - hex.radius)
+    maxY = Math.max(maxY, hex.center.y + hex.radius)
+  })
 
-  const moveX = width / 2
-  const moveY = height / 2
+  const totalWidth = maxX - minX
+  const totalHeight = maxY - minY
 
-  center.setPosition(moveX, moveY)
+  const padding = 50
+
+  const moveX = -minX + padding
+  const moveY = -minY + padding
+
   hexagons.forEach(hex => hex.move(moveX, moveY))
+  center.setPosition(center.x + moveX, center.y + moveY)
 
-  return { height, width, center, hexagons }
+  return {
+    width: totalWidth + padding * 2,
+    height: totalHeight + padding * 2,
+    center,
+    hexagons,
+  }
 }
