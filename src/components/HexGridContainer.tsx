@@ -1,10 +1,18 @@
-import { useState } from "react"
 import { cn } from "../lib/utils"
+import { Download, ZoomIn, ZoomOut } from "lucide-react";
+import { useState, useEffect } from "react";
 import hertaa from "../assets/hertaa.gif"
 
-export default function HexGridContainer() {
-  // handle your states here ..yim
-  const [data, setData] = useState(false)
+type imageProps = {
+  imageResult: string | null;
+  username: string | null;
+}
+
+export default function HexGridContainer({ imageResult, username }: imageProps) {
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  useEffect(() => {
+    setIsExpanded(false);
+  }, [imageResult]);
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pb-10">
@@ -15,7 +23,7 @@ export default function HexGridContainer() {
           "flex flex-col items-center justify-center p-6 transition-all"
         )}
       >
-        {!data ? (
+        {!imageResult ? (
           <div className="z-10 flex flex-col items-center space-y-4">
             <div className="flex h-72 w-72 items-center justify-center overflow-hidden">
               <img
@@ -30,14 +38,40 @@ export default function HexGridContainer() {
             </p>
           </div>
         ) : (
-          <div className="z-10 flex h-full w-full items-center justify-center">
-            {/* handle your canvas output here.. */}
-            <h1 className="text-2xl font-black text-white">
-              HEXAGON CANVAS READY
-            </h1>
-          </div>
+          <>
+            <div className="z-10 flex h-full w-full items-center justify-center">
+              <img
+                src={imageResult}
+                alt="Generated Hexagonal Grid"
+                className={cn(
+                  "max-w-full w-auto h-auto object-contain drop-shadow-xl rounded-xl transition-all duration-300",
+                  isExpanded ? "max-h-none scale-105" : "max-h-[500px] scale-100"
+                )}
+              />
+              <div className="absolute bottom-6 right-6 z-20 flex flex-col gap-3">
+
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="hover:text-accent transition-colors"
+                >
+                  {isExpanded ? <ZoomOut className="h-5 w-5" /> : <ZoomIn className="h-5 w-5" />}
+                </button>
+                <button
+                  onClick={() => {
+                    const link = document.createElement("a")
+                    link.download = `${username}-hexgrid.png`
+                    link.href = imageResult
+                    link.click()
+                  }}
+                  className="hover:text-accent transition-colors"
+                >
+                  <Download className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
-    </div>
+    </div >
   )
 }
