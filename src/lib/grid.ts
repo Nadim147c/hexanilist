@@ -31,6 +31,14 @@ export interface HexagonRing {
   hexagons: Hexagon[]
 }
 
+function shuffle(array: Point[]) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[array[i], array[j]] = [array[j], array[i]]
+  }
+  return array
+}
+
 export function generateHexagonRing(
   totalHexagon: number,
   radius: number
@@ -55,7 +63,12 @@ export function generateHexagonRing(
   for (let i = 0; i < totalHexagon - 1; i++) {
     let d = Infinity
     let hexCenter = centerHex.center
-    for (const point of empty.keys()) {
+
+    // shuffle the emptyPoints to make items looks more round and random
+    const emptyPoints = Array.from(empty.keys())
+    shuffle(emptyPoints)
+
+    for (const point of emptyPoints) {
       const newDist = point.distance(centerHex.center)
       if (newDist < d) {
         hexCenter = point
@@ -80,14 +93,10 @@ export function generateHexagonRing(
     }
   }
 
-  hexagons.sort((i, j) => {
-    return i.center.distance(center) - j.center.distance(center)
-  })
-
-  let minX = Infinity,
-    maxX = -Infinity
-  let minY = Infinity,
-    maxY = -Infinity
+  let minX = Infinity
+  let maxX = -Infinity
+  let minY = Infinity
+  let maxY = -Infinity
 
   hexagons.forEach(hex => {
     minX = Math.min(minX, hex.center.x - hex.radius)
