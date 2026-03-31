@@ -13,7 +13,7 @@ export default function Header() {
       </div>
 
       <a
-        href="https://github.com/zedxihan/hexanilist"
+        href="https://github.com/Nadim147c/hexanilist"
         target="_blank"
         rel="noopener noreferrer"
         className="group border-border hover:text-accent flex items-center gap-2 rounded-lg border bg-white/5 px-4 py-2 text-sm font-medium text-slate-400 transition-all hover:-translate-y-px hover:border-white/20 hover:bg-white/10 active:scale-95"
