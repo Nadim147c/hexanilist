@@ -136,10 +136,12 @@ export default function App() {
   const [loading, setLoading] = useState<boolean>(false)
   const [result, setResult] = useState<string | null>(null)
   const [username, setUsername] = useState<string | null>(null)
+  const [error, setError] = useState<boolean>(false)
 
   const handleSearch = async (username: string) => {
     setLoading(true)
     setResult(null)
+    setError(false)
     setUsername(username)
     try {
       const url = await generate(username, {
@@ -152,6 +154,7 @@ export default function App() {
       console.log("Searching for:", username)
     } catch (err) {
       console.error("Error fetching data:", err)
+      setError(true)
     } finally {
       setLoading(false)
     }
@@ -168,7 +171,11 @@ export default function App() {
         </h2>
         <Searchbar onSearch={handleSearch} loading={loading} />
 
-        <HexGridContainer imageResult={result} username={username} />
+        <HexGridContainer
+          imageResult={result}
+          username={username}
+          error={error}
+        />
       </main>
 
       <Footer />
