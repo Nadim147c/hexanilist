@@ -18,7 +18,7 @@ export default function Searchbar({ onSearch, loading }: SearchbarProps) {
   }
 
   return (
-    <div className="w-full max-w-xl">
+    <div className="w-full max-w-xl px-4">
       <form
         onSubmit={handleSubmit}
         className="focus-within:border-accent/50 flex items-center gap-2 rounded-xl border border-white/10 bg-[#161B22] p-1.5 transition-colors"
