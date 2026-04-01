@@ -2,15 +2,46 @@ import { cn } from "../lib/utils"
 import { Download, ZoomIn, ZoomOut } from "lucide-react"
 import { useState, useEffect } from "react"
 import hertaa from "../assets/hertaa.gif"
+import crying from "../assets/crying.gif"
 
 type imageProps = {
   imageResult: string | null
   username: string | null
+  error?: boolean
+}
+type StateDisplayProps = {
+  gif: string
+  alt: string
+  text: string
+  size?: string
+  textClass?: string
+}
+
+function StateDisplay({
+  gif,
+  alt,
+  text,
+  size = "h-72 w-72",
+  textClass = "",
+}: StateDisplayProps) {
+  return (
+    <div className="z-10 flex flex-col items-center space-y-4">
+      <div
+        className={cn("flex items-center justify-center overflow-hidden", size)}
+      >
+        <img src={gif} alt={alt} className="h-full w-full object-cover" />
+      </div>
+      <p className={cn("max-w-xs text-center font-medium", textClass)}>
+        {text}
+      </p>
+    </div>
+  )
 }
 
 export default function HexGridContainer({
   imageResult,
   username,
+  error,
 }: imageProps) {
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
   useEffect(() => {
@@ -29,20 +60,21 @@ export default function HexGridContainer({
           "flex flex-col items-center justify-center p-6 transition-all"
         )}
       >
-        {!imageResult ? (
-          <div className="z-10 flex flex-col items-center space-y-4">
-            <div className="flex h-72 w-72 items-center justify-center overflow-hidden">
-              <img
-                src={hertaa}
-                alt="Hertaa kawai gif"
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <p className="text-muted max-w-xs text-center font-medium">
-              Transform your anime and manga history into a beautiful,
-              minimalist hexagonal visualization.
-            </p>
-          </div>
+        {error ? (
+          <StateDisplay
+            gif={crying}
+            size="h-52 w-52"
+            alt="Error gif"
+            text="Couldn't find you senpai..."
+            textClass="text-red-500 animate-pulse font-bold italicss text-xl"
+          />
+        ) : !imageResult ? (
+          <StateDisplay
+            gif={hertaa}
+            alt="Hertaa kawai gif"
+            text="Transform your anime and manga history into a beautiful, minimalist hexagonal visualization."
+            textClass="text-muted"
+          />
         ) : (
           <>
             <div className="z-10 flex h-full w-full items-center justify-center">
