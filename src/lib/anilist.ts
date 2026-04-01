@@ -21,13 +21,13 @@ function calculateScore(
 ): number {
   let score = 0
   if (userScore !== null) score = userScore * 10
-  if (isFavorite) score += 200
+  if (isFavorite) score += 1000
   switch (status) {
     case "COMPLETED":
       score += 100
       break
     case "DROPPED":
-      score -= 100
+      score = 0
       break
   }
   return score
@@ -74,6 +74,8 @@ export function createNodes(data: AnilistData): Node[] {
       })
     })
   })
+
+  nodes.sort((a, b) => b.score - a.score)
 
   return nodes
 }
