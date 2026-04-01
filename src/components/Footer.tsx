@@ -7,7 +7,7 @@ export default function Footer() {
   return (
     <footer className="mx-auto mt-auto w-full max-w-7xl px-6 pb-5">
       <div className="flex flex-col items-center justify-between gap-6 border-t border-white/5 pt-5 md:flex-row">
-        <div className="order-2 flex flex-col text-sm leading-tight font-medium items-center md:order-1">
+        <div className="order-2 flex flex-col items-center text-sm leading-tight font-medium md:order-1">
           <div className="text-muted">
             HexAniList, <span className="text-lg leading-none">©</span>{" "}
             {currentYear}
