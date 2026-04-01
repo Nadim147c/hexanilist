@@ -1,18 +1,24 @@
 import { cn } from "../lib/utils"
-import { Download, ZoomIn, ZoomOut } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Download, ZoomIn, ZoomOut } from "lucide-react"
+import { useState, useEffect } from "react"
 import hertaa from "../assets/hertaa.gif"
 
 type imageProps = {
-  imageResult: string | null;
-  username: string | null;
+  imageResult: string | null
+  username: string | null
 }
 
-export default function HexGridContainer({ imageResult, username }: imageProps) {
-  const [isExpanded, setIsExpanded] = useState<boolean>(false);
+export default function HexGridContainer({
+  imageResult,
+  username,
+}: imageProps) {
+  const [isExpanded, setIsExpanded] = useState<boolean>(false)
   useEffect(() => {
-    setIsExpanded(false);
-  }, [imageResult]);
+    setIsExpanded(false)
+  }, [imageResult])
+
+  const iconButton =
+    "flex h-10 w-10 items-center justify-center rounded-full transition-all hover:scale-110 active:scale-95"
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pb-10">
@@ -44,17 +50,26 @@ export default function HexGridContainer({ imageResult, username }: imageProps) 
                 src={imageResult}
                 alt="Generated Hexagonal Grid"
                 className={cn(
-                  "max-w-full w-auto h-auto object-contain drop-shadow-xl rounded-xl transition-all duration-300",
-                  isExpanded ? "max-h-none scale-105" : "max-h-[500px] scale-100"
+                  "h-auto w-auto max-w-full rounded-xl object-contain drop-shadow-xl transition-all duration-300",
+                  isExpanded
+                    ? "max-h-none scale-105"
+                    : "max-h-[500px] scale-100"
                 )}
               />
-              <div className="absolute bottom-6 right-6 z-20 flex flex-col gap-3">
-
+              <div className="absolute right-6 bottom-6 z-20 flex flex-col gap-3">
                 <button
                   onClick={() => setIsExpanded(!isExpanded)}
-                  className="hover:text-accent transition-colors"
+                  className={cn(
+                    iconButton,
+                    "hidden border border-white/10 bg-white/10 text-white backdrop-blur-md hover:bg-white/20 md:inline-flex"
+                  )}
+                  title={isExpanded ? "Shrink View" : "Expand to Full Size"}
                 >
-                  {isExpanded ? <ZoomOut className="h-5 w-5" /> : <ZoomIn className="h-5 w-5" />}
+                  {isExpanded ? (
+                    <ZoomOut className="h-5 w-5" />
+                  ) : (
+                    <ZoomIn className="h-5 w-5" />
+                  )}
                 </button>
                 <button
                   onClick={() => {
@@ -63,7 +78,11 @@ export default function HexGridContainer({ imageResult, username }: imageProps) 
                     link.href = imageResult
                     link.click()
                   }}
-                  className="hover:text-accent transition-colors"
+                  className={cn(
+                    iconButton,
+                    "bg-accent hover:bg-accent-hover text-white"
+                  )}
+                  title="Download Image"
                 >
                   <Download className="h-5 w-5" />
                 </button>
@@ -72,6 +91,6 @@ export default function HexGridContainer({ imageResult, username }: imageProps) 
           </>
         )}
       </div>
-    </div >
+    </div>
   )
 }
