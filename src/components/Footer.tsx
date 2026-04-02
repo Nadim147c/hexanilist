@@ -1,8 +1,7 @@
-import { Mail, Heart, Pizza } from "lucide-react"
+import { Pizza, Code, Bug } from "lucide-react"
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
-  const linkStyle = "text-muted hover:text-accent transition-colors"
 
   return (
     <footer className="mx-auto mt-auto w-full max-w-7xl px-6 pb-5">
@@ -18,35 +17,54 @@ export default function Footer() {
         </div>
 
         <div className="order-1 flex items-center gap-6 md:order-2">
-          <a
-            href="#"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={linkStyle}
+          <LinkIcon
+            href="http://github.com/Nadim147c/hexanilist/issues"
+            tooltip="Report an issue"
           >
-            <Mail className="h-5 w-5" />
-          </a>
-          <a
-            href="#"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={linkStyle}
+            <Bug className="h-5 w-5" />
+          </LinkIcon>
+          <LinkIcon
+            href="http://github.com/Nadim147c/hexanilist"
+            tooltip="Source code"
           >
-            <Heart className="h-5 w-5" />
-          </a>
-          <a
-            href="#"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={linkStyle}
-          >
+            <Code className="h-5 w-5" />
+          </LinkIcon>
+          <LinkIcon href="http://patreon.com/Nadim147c" tooltip="Donate">
             <Pizza className="h-5 w-5" />
-          </a>
+          </LinkIcon>
         </div>
         <div className="order-3 flex items-center gap-6 text-sm font-medium">
-          <span className="text-muted">Made with ❤️</span>
+          <span className="text-muted cursor-default select-none hover:animate-pulse">
+            Made with ❤️
+          </span>
         </div>
       </div>
     </footer>
+  )
+}
+
+function LinkIcon({
+  href,
+  children,
+  tooltip,
+}: {
+  href: string
+  children: React.ReactNode
+  tooltip: string
+}) {
+  return (
+    <div className="group/link-icon relative">
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-muted hover:text-accent transition-colors"
+      >
+        {children}
+      </a>
+      <div className="bg-card absolute -top-10 left-1/2 hidden w-max -translate-x-1/2 rounded-lg px-2 py-1 group-hover/link-icon:block">
+        <span className="text-muted text-sm">{tooltip}</span>
+      </div>
+    </div>
   )
 }
