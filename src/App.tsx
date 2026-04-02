@@ -161,10 +161,10 @@ export default function App() {
   }
 
   return (
-    <>
+    <div className="flex h-screen w-screen flex-col">
       <Header />
 
-      <main className="flex flex-col items-center justify-center space-y-6">
+      <main className="flex flex-1 flex-col items-center justify-center space-y-6">
         <h2 className="text-center text-3xl font-black tracking-tighter text-white uppercase md:text-4xl">
           Your AniList Journey,{" "}
           <span className="text-slate-500">Hexagonal</span>
@@ -175,10 +175,11 @@ export default function App() {
           imageResult={result}
           username={username}
           error={error}
+          className="flex-1"
         />
       </main>
 
       <Footer />
-    </>
+    </div>
   )
 }
