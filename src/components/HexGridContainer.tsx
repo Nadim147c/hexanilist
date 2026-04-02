@@ -8,7 +8,9 @@ type imageProps = {
   imageResult: string | null
   username: string | null
   error?: boolean
+  className?: string
 }
+
 type StateDisplayProps = {
   gif: string
   alt: string
@@ -42,6 +44,7 @@ export default function HexGridContainer({
   imageResult,
   username,
   error,
+  className,
 }: imageProps) {
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
   useEffect(() => {
@@ -52,10 +55,10 @@ export default function HexGridContainer({
     "flex h-10 w-10 items-center justify-center rounded-full transition-all hover:scale-110 active:scale-95"
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 pb-10">
+    <div className={cn("mx-auto w-full max-w-5xl px-4 pb-10", className)}>
       <div
         className={cn(
-          "bg-card relative min-h-[400px] w-full md:min-h-[600px]",
+          "bg-card relative h-full min-h-[200px] w-full",
           "border-border overflow-hidden rounded-3xl border",
           "flex flex-col items-center justify-center p-6 transition-all"
         )}
@@ -72,6 +75,7 @@ export default function HexGridContainer({
           <StateDisplay
             gif={hertaa}
             alt="Hertaa kawai gif"
+            size="h-52 w-52"
             text="Transform your anime and manga history into a beautiful, minimalist hexagonal visualization."
             textClass="text-muted"
           />

@@ -6,30 +6,7 @@ import Footer from "./components/Footer"
 import { createNodes, fetchAnilist } from "./lib/anilist"
 import type { AnilistData } from "./types/anilist"
 import { generateHexagonRing } from "./lib/grid"
-
-function getCrop(
-  boxWidth: number,
-  boxHeight: number,
-  imgWidth: number,
-  imgHeight: number
-) {
-  const boxRatio = boxWidth / boxHeight
-  const imgRatio = imgWidth / imgHeight
-
-  if (boxRatio > imgRatio) {
-    const w = imgWidth
-    const h = imgWidth / boxRatio
-    const x = 0
-    const y = (imgHeight - h) / 2
-    return { x, y, w, h }
-  } else {
-    const w = imgHeight * boxRatio
-    const h = imgHeight
-    const x = (imgWidth - w) / 2
-    const y = 0
-    return { x, y, w, h }
-  }
-}
+import { getCrop } from "./lib/image"
 
 interface AnilistCache {
   timestamp: number
@@ -161,10 +138,10 @@ export default function App() {
   }
 
   return (
-    <>
+    <div className="flex h-screen w-screen flex-col">
       <Header />
 
-      <main className="flex flex-col items-center justify-center space-y-6">
+      <main className="flex flex-1 flex-col items-center justify-center space-y-6">
         <h2 className="text-center text-3xl font-black tracking-tighter text-white uppercase md:text-4xl">
           Your AniList Journey,{" "}
           <span className="text-slate-500">Hexagonal</span>
@@ -175,10 +152,11 @@ export default function App() {
           imageResult={result}
           username={username}
           error={error}
+          className="flex-1"
         />
       </main>
 
       <Footer />
-    </>
+    </div>
   )
 }
